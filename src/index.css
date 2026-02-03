@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Dark Mode (default) */
+  :root {
+    --card: rgba(30, 41, 59, 0.7);
+    --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 1) 100%);
+    --modal-backdrop: rgba(15, 23, 42, 0.8);
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --input-bg: #192233;
+    --input-border: #324467;
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --card-border: rgba(255, 255, 255, 0.05);
+    --scrollbar-thumb: rgba(148, 163, 184, 0.2);
+    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.4);
+  }
+  
+  /* Light Mode */
+  html:not(.dark) {
+    --card: rgba(255, 255, 255, 0.85);
+    --sidebar-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 1) 100%);
+    --modal-backdrop: rgba(100, 116, 139, 0.5);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --input-bg: #f8fafc;
+    --input-border: #e2e8f0;
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --card-border: rgba(0, 0, 0, 0.08);
+    --scrollbar-thumb: rgba(100, 116, 139, 0.3);
+    --scrollbar-thumb-hover: rgba(100, 116, 139, 0.5);
+  }
+  
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  body {
+    @apply antialiased;
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: var(--card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+  }
+  
+  .sidebar-gradient {
+    background: var(--sidebar-bg);
+  }
+  
+  .modal-backdrop {
+    background: var(--modal-backdrop);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Theme-aware text classes */
+  .theme-text {
+    color: var(--text-primary);
+  }
+  
+  .theme-text-secondary {
+    color: var(--text-secondary);
+  }
+  
+  .theme-text-muted {
+    color: var(--text-muted);
+  }
+
+  /* Theme-aware backgrounds */
+  .theme-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+  }
+
+  .theme-input {
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+  }
+
+  .theme-hover:hover {
+    background: var(--hover-bg);
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+}
+
+/* Global scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Modal animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-animate {
+  animation: modalFadeIn 0.2s ease-out forwards;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-accent text-white;
+}
