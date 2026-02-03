@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBoards } from '../../hooks/useBoards'
 import { Board } from '../../types'
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import BoardModal from '../Modals/BoardModal'
@@ -42,15 +42,29 @@ function SortableBoardItem({
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
       <div
-        className={`flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg cursor-pointer transition-all ${
+        className={`flex items-center justify-between gap-1 px-3 py-2 text-xs font-medium rounded-lg cursor-pointer transition-all ${
           isSelected
             ? 'bg-accent/10 text-accent border border-accent/20'
             : 'text-text-secondary dark:hover:bg-white/5 hover:bg-black/5 dark:hover:text-white hover:text-gray-900'
         }`}
-        onClick={onSelect}
+        onClick={(e) => {
+          // Ignore if click started on drag handle or menu button
+          const target = e.target as HTMLElement
+          if (target.closest('[data-drag-handle]') || target.closest('button')) return
+          onSelect()
+        }}
       >
-        <span {...listeners} className="flex-1 truncate">{board.name}</span>
-        <div className="relative">
+        <span
+          {...listeners}
+          data-drag-handle
+          className="flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-text-muted hover:text-current touch-none"
+          onClick={(e) => e.stopPropagation()}
+          title="Kéo để sắp xếp"
+        >
+          <span className="material-symbols-outlined text-sm">drag_indicator</span>
+        </span>
+        <span className="flex-1 truncate min-w-0">{board.name}</span>
+        <div className="relative flex-shrink-0">
           <button 
             onClick={(e) => {
               e.stopPropagation()
@@ -115,6 +129,13 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
       }
     }
   }, [boards, selectedBoardId, onSelectBoard])
+
+  // Chỉ kích hoạt drag sau khi di chuyển 8px, tránh nhầm click thành kéo
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  )
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -182,7 +203,7 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
 
         {/* Boards List */}
         <div className="flex-1 overflow-y-auto px-3 space-y-0.5 custom-scrollbar pb-3">
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={boards.map(b => b.id)} strategy={verticalListSortingStrategy}>
               {boards.map(board => (
                 <div key={board.id} className="group">
