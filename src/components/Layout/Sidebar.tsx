@@ -96,7 +96,7 @@ function SortableBoardItem({
   )
 }
 
-export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onToggle: _onToggle }: SidebarProps) {
   const { t } = useTranslation()
   const { signOut } = useAuth()
   const { boards, createBoard, updateBoard, deleteBoard, reorderBoards } = useBoards()
