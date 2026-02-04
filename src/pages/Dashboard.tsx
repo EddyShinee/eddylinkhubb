@@ -17,7 +17,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 
 export default function Dashboard() {
   const { t } = useTranslation()
-  const { session } = useAuth()
+  useAuth()
   const { backgroundColor, columnCount, categoryHeight } = useTheme()
   
   // Load last selected board from localStorage
