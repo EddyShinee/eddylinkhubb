@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBoards } from '../../hooks/useBoards'
 import { Board } from '../../types'
+import { useTheme } from '../../contexts/ThemeContext'
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -14,6 +15,7 @@ interface SidebarProps {
   onSelectBoard: (boardId: string) => void
   isOpen: boolean
   onToggle: () => void
+  onOpenITTool: () => void
 }
 
 function SortableBoardItem({ 
@@ -33,8 +35,10 @@ function SortableBoardItem({
   onDuplicate: () => void
   onMenuOpenChange?: (open: boolean) => void
 }) {
+  const { enableBoardDrag } = useTheme()
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: board.id,
+    disabled: !enableBoardDrag,
   })
 
   const style = {
@@ -97,9 +101,11 @@ function SortableBoardItem({
         <span
           {...listeners}
           data-drag-handle
-          className="flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-text-muted hover:text-current touch-none"
+          className={`flex-shrink-0 p-0.5 ${
+            enableBoardDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default opacity-40'
+          } text-text-muted hover:text-current touch-none`}
           onClick={(e) => e.stopPropagation()}
-          title="Kéo để sắp xếp"
+          title={enableBoardDrag ? 'Kéo để sắp xếp' : 'Drag board đang tắt trong Settings'}
         >
           <span className="material-symbols-outlined text-sm">drag_indicator</span>
         </span>
@@ -172,7 +178,7 @@ function SortableBoardItem({
   )
 }
 
-export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onToggle: _onToggle }: SidebarProps) {
+export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onToggle: _onToggle, onOpenITTool }: SidebarProps) {
   const { t } = useTranslation()
   const { signOut } = useAuth()
   const { boards, createBoard, updateBoard, deleteBoard, reorderBoards, duplicateBoard } = useBoards()
@@ -267,8 +273,26 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
           </div>
         </div>
 
+        {/* IT Tool shortcut */}
+        <div className="px-4 pt-3 pb-1">
+          <button
+            onClick={onOpenITTool}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-black/5 transition-colors group"
+          >
+            <span className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-accent group-hover:scale-110 transition-transform">
+                terminal
+              </span>
+              <span className="truncate">IT Tool</span>
+            </span>
+            <span className="material-symbols-outlined text-xs opacity-60 group-hover:opacity-100 transition-opacity">
+              launch
+            </span>
+          </button>
+        </div>
+
         {/* Boards Header */}
-        <div className="px-4 pt-3 pb-2 flex items-center justify-between group">
+        <div className="px-4 pt-2 pb-2 flex items-center justify-between group">
           <span className="text-[10px] font-bold uppercase text-text-muted tracking-widest">
             {t('dashboard.yourBoards')}
           </span>

@@ -12,6 +12,7 @@ import Header from '../components/Layout/Header'
 import CategoryCard from '../components/Dashboard/CategoryCard'
 import CategoryModal from '../components/Modals/CategoryModal'
 import BookmarkModal from '../components/Modals/BookmarkModal'
+import ITToolModal from '../components/Modals/ITToolModal'
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 
@@ -78,6 +79,7 @@ export default function Dashboard() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
   const [deletingBookmark, setDeletingBookmark] = useState<string | null>(null)
+  const [showITToolModal, setShowITToolModal] = useState(false)
 
   // Khi có dropdown mở (category/bookmark menu), nâng z-index vùng content để popup không bị chìm dưới header
   const [contentDropdownOpenCount, setContentDropdownOpenCount] = useState(0)
@@ -246,6 +248,7 @@ export default function Dashboard() {
         onSelectBoard={setSelectedBoardId}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onOpenITTool={() => setShowITToolModal(true)}
       />
 
       {/* Main Content */}
@@ -449,6 +452,13 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* IT Tool Modal */}
+      {showITToolModal && (
+        <ITToolModal
+          onClose={() => setShowITToolModal(false)}
+        />
       )}
     </div>
   )

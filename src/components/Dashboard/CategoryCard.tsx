@@ -16,9 +16,10 @@ interface SortableBookmarkItemProps {
 }
 
 function SortableBookmarkItem({ bookmark, onEdit, onDuplicate, onDelete, onMenuOpenChange }: SortableBookmarkItemProps) {
-  const { openInNewTab } = useTheme()
+  const { openInNewTab, enableBookmarkDrag } = useTheme()
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: bookmark.id,
+    disabled: !enableBookmarkDrag,
   })
 
   const style = {
@@ -80,7 +81,9 @@ function SortableBookmarkItem({ bookmark, onEdit, onDuplicate, onDelete, onMenuO
         onClick={handleClick}
       >
         <div {...listeners} className="cursor-grab">
-          <span className="material-symbols-outlined text-sm text-text-muted opacity-0 group-hover/item:opacity-100 transition-opacity">
+          <span className={`material-symbols-outlined text-sm text-text-muted transition-opacity ${
+            enableBookmarkDrag ? 'opacity-0 group-hover/item:opacity-100' : 'opacity-40'
+          }`}>
             drag_indicator
           </span>
         </div>
@@ -191,6 +194,7 @@ export default function CategoryCard({
   onDropdownOpenChange,
 }: CategoryCardProps) {
   useTranslation() // For future use
+  const { enableCategoryDrag } = useTheme()
   const [showMenu, setShowMenu] = useState(false)
   const [showMoveSubmenu, setShowMoveSubmenu] = useState(false)
   const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number }>({ right: 0, maxHeight: 320 })
@@ -251,8 +255,7 @@ export default function CategoryCard({
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: category.id })
+  } = useSortable({ id: category.id, disabled: !enableCategoryDrag })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -289,9 +292,7 @@ export default function CategoryCard({
         backgroundColor: bgColor,
       }}
       {...attributes}
-      className={`rounded-xl shadow-glass group dark:hover:border-white/10 hover:border-gray-300 transition-colors duration-300 flex flex-col min-h-0 h-full break-inside-avoid dark:border-white/5 border-gray-200 border backdrop-blur-sm ${
-        isDragging ? 'opacity-50 z-50 shadow-2xl' : ''
-      } ${isAnyDropdownOpen ? 'relative z-[100]' : ''}`}
+      className={`rounded-xl shadow-glass group dark:hover:border-white/10 hover:border-gray-300 transition-colors duration-300 flex flex-col min-h-0 h-full break-inside-avoid dark:border-white/5 border-gray-200 border backdrop-blur-sm hover:shadow-lg ${isAnyDropdownOpen ? 'relative z-[100]' : ''}`}
     >
       {/* Header */}
       <div className="px-3 py-2.5 border-b dark:border-white/5 border-gray-200/50 flex justify-between items-center dark:bg-white/[0.02] bg-black/[0.02]">

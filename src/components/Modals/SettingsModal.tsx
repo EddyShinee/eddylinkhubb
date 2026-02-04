@@ -13,7 +13,24 @@ interface SettingsModalProps {
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const { t, i18n } = useTranslation()
   const { profile, updateProfile } = useAuth()
-  const { backgroundColor, setBackgroundColor, columnCount, setColumnCount, categoryHeight, setCategoryHeight, darkMode, setDarkMode, openInNewTab, setOpenInNewTab } = useTheme()
+  const {
+    backgroundColor,
+    setBackgroundColor,
+    columnCount,
+    setColumnCount,
+    categoryHeight,
+    setCategoryHeight,
+    darkMode,
+    setDarkMode,
+    openInNewTab,
+    setOpenInNewTab,
+    enableBoardDrag,
+    setEnableBoardDrag,
+    enableCategoryDrag,
+    setEnableCategoryDrag,
+    enableBookmarkDrag,
+    setEnableBookmarkDrag,
+  } = useTheme()
   const { createBoard } = useBoards()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
@@ -437,6 +454,63 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     <span className="material-symbols-outlined text-sm">tab</span>
                     {t('settings.sameTab')}
                   </button>
+                </div>
+              </div>
+
+              {/* Drag & Drop */}
+              <div className="space-y-3">
+                <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider block">
+                  Drag & Drop
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-text-muted">Di chuyển Board</span>
+                    <button
+                      onClick={() => setEnableBoardDrag(!enableBoardDrag)}
+                      className={`min-w-[72px] py-1.5 px-3 rounded-full text-[11px] font-medium transition-all flex items-center justify-center gap-1 ${
+                        enableBoardDrag
+                          ? 'bg-accent/20 text-accent border border-accent/30'
+                          : 'dark:bg-white/5 bg-gray-100 text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/10 hover:bg-gray-200 dark:border-white/10 border-gray-200 border'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xs">
+                        {enableBoardDrag ? 'check' : 'close'}
+                      </span>
+                      {enableBoardDrag ? 'Bật' : 'Tắt'}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-text-muted">Di chuyển Category</span>
+                    <button
+                      onClick={() => setEnableCategoryDrag(!enableCategoryDrag)}
+                      className={`min-w-[72px] py-1.5 px-3 rounded-full text-[11px] font-medium transition-all flex items-center justify-center gap-1 ${
+                        enableCategoryDrag
+                          ? 'bg-accent/20 text-accent border border-accent/30'
+                          : 'dark:bg-white/5 bg-gray-100 text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/10 hover:bg-gray-200 dark:border-white/10 border-gray-200 border'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xs">
+                        {enableCategoryDrag ? 'check' : 'close'}
+                      </span>
+                      {enableCategoryDrag ? 'Bật' : 'Tắt'}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-text-muted">Di chuyển Bookmark</span>
+                    <button
+                      onClick={() => setEnableBookmarkDrag(!enableBookmarkDrag)}
+                      className={`min-w-[72px] py-1.5 px-3 rounded-full text-[11px] font-medium transition-all flex items-center justify-center gap-1 ${
+                        enableBookmarkDrag
+                          ? 'bg-accent/20 text-accent border border-accent/30'
+                          : 'dark:bg-white/5 bg-gray-100 text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/10 hover:bg-gray-200 dark:border-white/10 border-gray-200 border'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xs">
+                        {enableBookmarkDrag ? 'check' : 'close'}
+                      </span>
+                      {enableBookmarkDrag ? 'Bật' : 'Tắt'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

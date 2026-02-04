@@ -12,6 +12,12 @@ interface ThemeContextType {
   setDarkMode: (dark: boolean) => void
   openInNewTab: boolean
   setOpenInNewTab: (newTab: boolean) => void
+  enableBoardDrag: boolean
+  setEnableBoardDrag: (enabled: boolean) => void
+  enableCategoryDrag: boolean
+  setEnableCategoryDrag: (enabled: boolean) => void
+  enableBookmarkDrag: boolean
+  setEnableBookmarkDrag: (enabled: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
@@ -26,6 +32,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [categoryHeight, setCategoryHeightState] = useState<'equal' | 'auto'>(DEFAULT_CATEGORY_HEIGHT)
   const [darkMode, setDarkModeState] = useState(true)
   const [openInNewTab, setOpenInNewTabState] = useState(true)
+  const [enableBoardDrag, setEnableBoardDragState] = useState(true)
+  const [enableCategoryDrag, setEnableCategoryDragState] = useState(true)
+  const [enableBookmarkDrag, setEnableBookmarkDragState] = useState(true)
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -52,6 +61,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedOpenInNewTab = localStorage.getItem('openInNewTab')
     if (savedOpenInNewTab !== null) {
       setOpenInNewTabState(savedOpenInNewTab === 'true')
+    }
+
+    const savedBoardDrag = localStorage.getItem('enableBoardDrag')
+    if (savedBoardDrag !== null) {
+      setEnableBoardDragState(savedBoardDrag === 'true')
+    }
+
+    const savedCategoryDrag = localStorage.getItem('enableCategoryDrag')
+    if (savedCategoryDrag !== null) {
+      setEnableCategoryDragState(savedCategoryDrag === 'true')
+    }
+
+    const savedBookmarkDrag = localStorage.getItem('enableBookmarkDrag')
+    if (savedBookmarkDrag !== null) {
+      setEnableBookmarkDragState(savedBookmarkDrag === 'true')
     }
   }, [])
 
@@ -109,8 +133,42 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('openInNewTab', String(newTab))
   }, [])
 
+  const setEnableBoardDrag = useCallback((enabled: boolean) => {
+    setEnableBoardDragState(enabled)
+    localStorage.setItem('enableBoardDrag', String(enabled))
+  }, [])
+
+  const setEnableCategoryDrag = useCallback((enabled: boolean) => {
+    setEnableCategoryDragState(enabled)
+    localStorage.setItem('enableCategoryDrag', String(enabled))
+  }, [])
+
+  const setEnableBookmarkDrag = useCallback((enabled: boolean) => {
+    setEnableBookmarkDragState(enabled)
+    localStorage.setItem('enableBookmarkDrag', String(enabled))
+  }, [])
+
   return (
-    <ThemeContext.Provider value={{ backgroundColor, setBackgroundColor, columnCount, setColumnCount, categoryHeight, setCategoryHeight, darkMode, setDarkMode, openInNewTab, setOpenInNewTab }}>
+    <ThemeContext.Provider
+      value={{
+        backgroundColor,
+        setBackgroundColor,
+        columnCount,
+        setColumnCount,
+        categoryHeight,
+        setCategoryHeight,
+        darkMode,
+        setDarkMode,
+        openInNewTab,
+        setOpenInNewTab,
+        enableBoardDrag,
+        setEnableBoardDrag,
+        enableCategoryDrag,
+        setEnableCategoryDrag,
+        enableBookmarkDrag,
+        setEnableBookmarkDrag,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   )
