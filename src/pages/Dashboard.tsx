@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../contexts/ThemeContext'
+import { useBoards } from '../hooks/useBoards'
 import { useCategories } from '../hooks/useCategories'
 import { useBoardBookmarks } from '../hooks/useBookmarks'
+import { useAuth } from '../contexts/AuthContext'
 import { supabase, testConnection } from '../lib/supabase'
 import { Category, Bookmark } from '../types'
 import Sidebar from '../components/Layout/Sidebar'
@@ -15,6 +17,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const { session } = useAuth()
   const { backgroundColor, columnCount, categoryHeight } = useTheme()
   
   // Load last selected board from localStorage
@@ -60,8 +63,11 @@ export default function Dashboard() {
     })
   }, [])
   
-  const { categories, createCategory, updateCategory, deleteCategory, reorderCategories } = useCategories(selectedBoardId)
+  const { boards } = useBoards()
+  const { categories, createCategory, updateCategory, deleteCategory, reorderCategories, duplicateCategory } = useCategories(selectedBoardId)
   const { bookmarksByCategory, refetch: refetchBookmarks } = useBoardBookmarks(selectedBoardId)
+
+  const otherBoards = boards.filter(b => b.id !== selectedBoardId)
 
   // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false)
@@ -72,6 +78,27 @@ export default function Dashboard() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
   const [deletingBookmark, setDeletingBookmark] = useState<string | null>(null)
+
+  // Khi có dropdown mở (category/bookmark menu), nâng z-index vùng content để popup không bị chìm dưới header
+  const [contentDropdownOpenCount, setContentDropdownOpenCount] = useState(0)
+  const contentDropdownCountRef = useRef(0)
+  const handleContentDropdownOpenChange = useCallback((open: boolean) => {
+    if (open) contentDropdownCountRef.current++
+    else contentDropdownCountRef.current = Math.max(0, contentDropdownCountRef.current - 1)
+    setContentDropdownOpenCount(contentDropdownCountRef.current)
+  }, [])
+
+  // Ẩn thanh cuộn trang khi mở menu 3 chấm (category hoặc bookmark)
+  useEffect(() => {
+    if (contentDropdownOpenCount > 0) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [contentDropdownOpenCount])
 
   // Handlers
   const handleCreateCategory = async (data: { name: string; color: string; icon: string; bg_opacity: number }) => {
@@ -98,6 +125,24 @@ export default function Dashboard() {
       await deleteCategory(deletingCategory.id)
       setDeletingCategory(null)
     }
+  }
+
+  const handleDuplicateCategory = async (category: Category) => {
+    const result = await duplicateCategory(category)
+    if (result.error) {
+      alert(`Lỗi nhân bản danh mục: ${result.error.message}`)
+      return
+    }
+    refetchBookmarks()
+  }
+
+  const handleMoveCategoryToBoard = async (category: Category, targetBoardId: string) => {
+    const { error } = await updateCategory(category.id, { board_id: targetBoardId })
+    if (error) {
+      alert(`Lỗi di chuyển danh mục: ${error.message}`)
+      return
+    }
+    refetchBookmarks()
   }
 
   const handleCreateBookmark = async (data: { url: string; title: string; description?: string; tags?: string[]; category_id?: string }) => {
@@ -145,6 +190,20 @@ export default function Dashboard() {
       refetchBookmarks()
       setDeletingBookmark(null)
     }
+  }
+
+  const handleDuplicateBookmark = async (bookmark: Bookmark) => {
+    const list = bookmarksByCategory[bookmark.category_id] || []
+    const maxOrder = list.length > 0 ? Math.max(...list.map(b => b.sort_order)) + 1 : 0
+    await supabase.from('bookmarks').insert({
+      category_id: bookmark.category_id,
+      url: bookmark.url,
+      title: bookmark.title,
+      description: bookmark.description || null,
+      tags: bookmark.tags || [],
+      sort_order: maxOrder,
+    })
+    refetchBookmarks()
   }
 
   const handleReorderBookmarks = async (_categoryId: string, reordered: Bookmark[]) => {
@@ -232,20 +291,21 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Categories Grid */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 z-10 custom-scrollbar">
+        {/* Categories Grid - z-[60] khi có dropdown mở để popup không bị chìm dưới header */}
+        <div className={`flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar transition-z-index ${contentDropdownOpenCount > 0 ? 'z-[60] relative' : 'z-10'}`}>
           {selectedBoardId ? (
             categories.length > 0 ? (
               <DndContext collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
                 <SortableContext items={categories.map(c => c.id)} strategy={rectSortingStrategy}>
                   <div 
-                    className={categoryHeight === 'equal' ? 'grid gap-4 items-stretch' : 'gap-4 space-y-4'}
+                    className={categoryHeight === 'equal' ? 'grid gap-4 items-stretch' : 'gap-4 [&>div]:mb-4'}
                     style={categoryHeight === 'equal' ? { 
                       gridTemplateColumns: `repeat(${effectiveColumnCount}, minmax(0, 1fr))`,
                       gridAutoRows: '1fr',
                     } : {
                       columnCount: effectiveColumnCount,
                       columnGap: '1rem',
+                      columnFill: 'balance',
                     }}
                   >
                     {categories.map(category => (
@@ -253,15 +313,20 @@ export default function Dashboard() {
                         key={category.id}
                         category={category}
                         bookmarks={bookmarksByCategory[category.id] || []}
+                        otherBoards={otherBoards}
                         onEditCategory={() => setEditingCategory(category)}
+                        onDuplicateCategory={() => handleDuplicateCategory(category)}
                         onDeleteCategory={() => setDeletingCategory(category)}
+                        onMoveToBoard={(targetBoardId) => handleMoveCategoryToBoard(category, targetBoardId)}
                         onAddBookmark={() => {
                           setSelectedCategoryId(category.id)
                           setShowBookmarkModal(true)
                         }}
                         onEditBookmark={setEditingBookmark}
+                        onDuplicateBookmark={handleDuplicateBookmark}
                         onDeleteBookmark={setDeletingBookmark}
                         onReorderBookmarks={(reordered) => handleReorderBookmarks(category.id, reordered)}
+                        onDropdownOpenChange={handleContentDropdownOpenChange}
                       />
                     ))}
                   </div>
@@ -309,7 +374,7 @@ export default function Dashboard() {
 
       {/* Delete Category Confirmation */}
       {deletingCategory && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
           <div 
             className="absolute inset-0 dark:bg-black/60 bg-black/30 backdrop-blur-[4px]"
             onClick={() => setDeletingCategory(null)}
@@ -360,7 +425,7 @@ export default function Dashboard() {
 
       {/* Delete Bookmark Confirmation */}
       {deletingBookmark && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
           <div 
             className="absolute inset-0 dark:bg-black/60 bg-black/30 backdrop-blur-[4px]"
             onClick={() => setDeletingBookmark(null)}

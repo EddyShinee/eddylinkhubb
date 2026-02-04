@@ -66,7 +66,7 @@ export default function Header({ onSelectBoard, sidebarOpen, onToggleSidebar }: 
 
   return (
     <>
-      <header className="h-14 z-50 flex items-center justify-between px-4 border-b dark:border-border/50 border-gray-200 dark:bg-main/60 bg-white/80 backdrop-blur-md gap-4">
+      <header className="h-14 z-40 flex items-center justify-between px-4 border-b dark:border-border/50 border-gray-200 dark:bg-main/60 bg-white/80 backdrop-blur-md gap-4">
         {/* Sidebar Toggle */}
         <button
           onClick={onToggleSidebar}
@@ -134,7 +134,7 @@ export default function Header({ onSelectBoard, sidebarOpen, onToggleSidebar }: 
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-1 w-40 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-lg shadow-2xl z-[101] overflow-hidden py-1">
+              <div className="absolute right-0 top-full mt-1 w-40 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-lg shadow-2xl z-[100] overflow-hidden py-1">
                 <button
                   onClick={() => {
                     setShowSettings(true)

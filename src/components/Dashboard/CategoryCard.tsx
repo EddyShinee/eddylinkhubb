@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { Category, Bookmark } from '../../types'
+import { Category, Bookmark, Board } from '../../types'
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -9,10 +10,12 @@ import { useTheme } from '../../contexts/ThemeContext'
 interface SortableBookmarkItemProps {
   bookmark: Bookmark
   onEdit: () => void
+  onDuplicate: () => void
   onDelete: () => void
+  onMenuOpenChange?: (open: boolean) => void
 }
 
-function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkItemProps) {
+function SortableBookmarkItem({ bookmark, onEdit, onDuplicate, onDelete, onMenuOpenChange }: SortableBookmarkItemProps) {
   const { openInNewTab } = useTheme()
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: bookmark.id,
@@ -24,6 +27,41 @@ function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkIt
   }
 
   const [showMenu, setShowMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number }>({ right: 0, maxHeight: 280 })
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuContainerRef = useRef<HTMLDivElement>(null)
+
+  const openMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const spaceAbove = rect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+      const right = window.innerWidth - rect.right
+      const gap = 8
+      if (spaceAbove > spaceBelow) {
+        setMenuPosition({ bottom: window.innerHeight - rect.top + 4, right, maxHeight: Math.max(100, spaceAbove - gap) })
+      } else {
+        setMenuPosition({ top: rect.bottom + 4, right, maxHeight: Math.max(100, spaceBelow - gap) })
+      }
+    }
+    setShowMenu(true)
+  }
+
+  useEffect(() => {
+    onMenuOpenChange?.(showMenu)
+    return () => onMenuOpenChange?.(false)
+  }, [showMenu, onMenuOpenChange])
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node) && !triggerRef.current?.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
 
   const handleClick = () => {
     if (!showMenu) {
@@ -52,24 +90,35 @@ function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkIt
         </span>
         <div className="relative">
           <button
+            ref={triggerRef}
             onClick={(e) => {
               e.stopPropagation()
-              setShowMenu(!showMenu)
+              if (showMenu) setShowMenu(false)
+              else openMenu()
             }}
             className="text-text-muted dark:hover:text-white hover:text-gray-900 opacity-0 group-hover/item:opacity-100 p-0.5 transition-opacity"
           >
             <span className="material-icons-round text-xs">more_vert</span>
           </button>
-          {showMenu && (
+          {showMenu && createPortal(
             <>
               <div 
-                className="fixed inset-0 z-[200]" 
+                className="fixed inset-0 z-[9998]" 
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowMenu(false)
                 }}
+                aria-hidden
               />
-              <div className="absolute right-0 top-full mt-1 w-24 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-md shadow-lg z-[201] py-0.5">
+              <div 
+                ref={menuContainerRef}
+                className="fixed w-28 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-md shadow-lg z-[9999] py-0.5 overflow-y-auto custom-scrollbar"
+                style={{
+                  ...(menuPosition.top != null ? { top: menuPosition.top } : { bottom: menuPosition.bottom }),
+                  right: menuPosition.right,
+                  maxHeight: menuPosition.maxHeight,
+                }}
+              >
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -83,6 +132,16 @@ function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkIt
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
+                    onDuplicate()
+                    setShowMenu(false)
+                  }}
+                  className="w-full px-2 py-1.5 text-left text-xs text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-gray-100"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
                     onDelete()
                     setShowMenu(false)
                   }}
@@ -91,7 +150,8 @@ function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkIt
                   Delete
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
@@ -102,26 +162,87 @@ function SortableBookmarkItem({ bookmark, onEdit, onDelete }: SortableBookmarkIt
 interface CategoryCardProps {
   category: Category
   bookmarks: Bookmark[]
+  otherBoards?: Board[]
   onEditCategory: () => void
+  onDuplicateCategory: () => void
   onDeleteCategory: () => void
+  onMoveToBoard?: (targetBoardId: string) => void
   onAddBookmark: () => void
   onEditBookmark: (bookmark: Bookmark) => void
+  onDuplicateBookmark: (bookmark: Bookmark) => void
   onDeleteBookmark: (bookmarkId: string) => void
   onReorderBookmarks: (bookmarks: Bookmark[]) => void
+  onDropdownOpenChange?: (open: boolean) => void
 }
 
 export default function CategoryCard({
   category,
   bookmarks,
+  otherBoards = [],
   onEditCategory,
+  onDuplicateCategory,
   onDeleteCategory,
+  onMoveToBoard,
   onAddBookmark,
   onEditBookmark,
+  onDuplicateBookmark,
   onDeleteBookmark,
   onReorderBookmarks,
+  onDropdownOpenChange,
 }: CategoryCardProps) {
   useTranslation() // For future use
   const [showMenu, setShowMenu] = useState(false)
+  const [showMoveSubmenu, setShowMoveSubmenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number }>({ right: 0, maxHeight: 320 })
+  const [bookmarkMenuOpenCount, setBookmarkMenuOpenCount] = useState(0)
+  const categoryMenuTriggerRef = useRef<HTMLButtonElement>(null)
+  const categoryMenuRef = useRef<HTMLDivElement>(null)
+  const isAnyDropdownOpen = showMenu || bookmarkMenuOpenCount > 0
+
+  const openCategoryMenu = () => {
+    const rect = categoryMenuTriggerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const spaceAbove = rect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+      const right = window.innerWidth - rect.right
+      const gap = 8
+      if (spaceAbove > spaceBelow) {
+        setMenuPosition({
+          bottom: window.innerHeight - rect.top + 4,
+          right,
+          maxHeight: Math.max(120, spaceAbove - gap),
+        })
+      } else {
+        setMenuPosition({
+          top: rect.bottom + 4,
+          right,
+          maxHeight: Math.max(120, spaceBelow - gap),
+        })
+      }
+    }
+    setShowMoveSubmenu(false)
+    setShowMenu(true)
+  }
+
+  useEffect(() => {
+    onDropdownOpenChange?.(isAnyDropdownOpen)
+    return () => onDropdownOpenChange?.(false)
+  }, [isAnyDropdownOpen, onDropdownOpenChange])
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node) && !categoryMenuTriggerRef.current?.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
+
+  const handleBookmarkMenuOpenChange = useCallback((open: boolean) => {
+    setBookmarkMenuOpenCount(prev => open ? prev + 1 : Math.max(0, prev - 1))
+  }, [])
 
   // Make this category card sortable
   const {
@@ -168,9 +289,9 @@ export default function CategoryCard({
         backgroundColor: bgColor,
       }}
       {...attributes}
-      className={`rounded-xl shadow-glass group dark:hover:border-white/10 hover:border-gray-300 transition-colors duration-300 flex flex-col h-full break-inside-avoid dark:border-white/5 border-gray-200 border backdrop-blur-sm ${
+      className={`rounded-xl shadow-glass group dark:hover:border-white/10 hover:border-gray-300 transition-colors duration-300 flex flex-col min-h-0 h-full break-inside-avoid dark:border-white/5 border-gray-200 border backdrop-blur-sm ${
         isDragging ? 'opacity-50 z-50 shadow-2xl' : ''
-      }`}
+      } ${isAnyDropdownOpen ? 'relative z-[100]' : ''}`}
     >
       {/* Header */}
       <div className="px-3 py-2.5 border-b dark:border-white/5 border-gray-200/50 flex justify-between items-center dark:bg-white/[0.02] bg-black/[0.02]">
@@ -190,18 +311,31 @@ export default function CategoryCard({
         </div>
         <div className="relative flex-shrink-0">
           <button 
-            onClick={() => setShowMenu(!showMenu)}
+            ref={categoryMenuTriggerRef}
+            onClick={() => {
+              if (showMenu) setShowMenu(false)
+              else openCategoryMenu()
+            }}
             className="text-text-muted dark:hover:text-white hover:text-gray-900 transition opacity-0 group-hover:opacity-100"
           >
             <span className="material-icons-round text-base">more_horiz</span>
           </button>
-          {showMenu && (
+          {showMenu && createPortal(
             <>
               <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowMenu(false)}
+                className="fixed inset-0 z-[9998]" 
+                onClick={() => { setShowMenu(false); setShowMoveSubmenu(false) }}
+                aria-hidden
               />
-              <div className="absolute right-0 top-full mt-1 w-32 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-md shadow-lg z-50 py-0.5">
+              <div 
+                ref={categoryMenuRef}
+                className="fixed min-w-[8rem] max-w-[14rem] dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-md shadow-lg z-[9999] py-0.5 overflow-y-auto custom-scrollbar"
+                style={{
+                  ...(menuPosition.top != null ? { top: menuPosition.top } : { bottom: menuPosition.bottom }),
+                  right: menuPosition.right,
+                  maxHeight: menuPosition.maxHeight,
+                }}
+              >
                 <button
                   onClick={() => {
                     onAddBookmark()
@@ -224,6 +358,50 @@ export default function CategoryCard({
                 </button>
                 <button
                   onClick={() => {
+                    onDuplicateCategory()
+                    setShowMenu(false)
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left text-xs text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                  Duplicate
+                </button>
+                {otherBoards.length > 0 && onMoveToBoard && (
+                  <>
+                    <div className="border-t dark:border-white/10 border-gray-200 mt-0.5" />
+                    <button
+                      type="button"
+                      onClick={() => setShowMoveSubmenu((v) => !v)}
+                      className="w-full px-2.5 py-1.5 text-left text-xs text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-gray-100 flex items-center justify-between gap-2"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">drive_file_move</span>
+                        Move to
+                      </span>
+                      <span className={`material-symbols-outlined text-sm transition-transform ${showMoveSubmenu ? 'rotate-90' : ''}`}>chevron_right</span>
+                    </button>
+                    {showMoveSubmenu && (
+                      <div className="pl-4 pb-0.5">
+                        {otherBoards.map((board) => (
+                          <button
+                            key={board.id}
+                            type="button"
+                            onClick={() => {
+                              onMoveToBoard(board.id)
+                              setShowMenu(false)
+                              setShowMoveSubmenu(false)
+                            }}
+                            className="w-full px-2 py-1 text-left text-xs text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-gray-100 flex items-center gap-2 min-w-0 rounded"
+                          >
+                            <span className="truncate">{board.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                <button
+                  onClick={() => {
                     onDeleteCategory()
                     setShowMenu(false)
                   }}
@@ -233,14 +411,15 @@ export default function CategoryCard({
                   Delete
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
 
       {/* Bookmarks */}
       {bookmarks.length > 0 ? (
-        <ul className="py-1 px-0.5 flex-1">
+        <ul className="py-1 px-0.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={bookmarks.map(b => b.id)} strategy={verticalListSortingStrategy}>
               {bookmarks.map(bookmark => (
@@ -248,7 +427,9 @@ export default function CategoryCard({
                   key={bookmark.id}
                   bookmark={bookmark}
                   onEdit={() => onEditBookmark(bookmark)}
+                  onDuplicate={() => onDuplicateBookmark(bookmark)}
                   onDelete={() => onDeleteBookmark(bookmark.id)}
+                  onMenuOpenChange={handleBookmarkMenuOpenChange}
                 />
               ))}
             </SortableContext>

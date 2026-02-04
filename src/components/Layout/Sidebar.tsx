@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBoards } from '../../hooks/useBoards'
@@ -21,12 +22,16 @@ function SortableBoardItem({
   onSelect,
   onEdit,
   onDelete,
+  onDuplicate,
+  onMenuOpenChange,
 }: { 
   board: Board
   isSelected: boolean
   onSelect: () => void
   onEdit: () => void
   onDelete: () => void
+  onDuplicate: () => void
+  onMenuOpenChange?: (open: boolean) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: board.id,
@@ -38,6 +43,41 @@ function SortableBoardItem({
   }
 
   const [showMenu, setShowMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number; maxHeight: number }>({ right: 0, maxHeight: 200 })
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuContainerRef = useRef<HTMLDivElement>(null)
+
+  const openMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const spaceAbove = rect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+      const right = window.innerWidth - rect.right
+      const gap = 8
+      if (spaceAbove > spaceBelow) {
+        setMenuPosition({ bottom: window.innerHeight - rect.top + 4, right, maxHeight: Math.max(100, spaceAbove - gap) })
+      } else {
+        setMenuPosition({ top: rect.bottom + 4, right, maxHeight: Math.max(100, spaceBelow - gap) })
+      }
+    }
+    setShowMenu(true)
+  }
+
+  useEffect(() => {
+    onMenuOpenChange?.(showMenu)
+    return () => onMenuOpenChange?.(false)
+  }, [showMenu, onMenuOpenChange])
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node) && !triggerRef.current?.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
@@ -66,21 +106,32 @@ function SortableBoardItem({
         <span className="flex-1 truncate min-w-0">{board.name}</span>
         <div className="relative flex-shrink-0">
           <button 
+            ref={triggerRef}
             onClick={(e) => {
               e.stopPropagation()
-              setShowMenu(!showMenu)
+              if (showMenu) setShowMenu(false)
+              else openMenu()
             }}
             className="text-text-muted dark:hover:text-white hover:text-gray-900 p-0.5 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
           >
             <span className="material-icons-round text-sm">more_vert</span>
           </button>
-          {showMenu && (
+          {showMenu && createPortal(
             <>
               <div 
-                className="fixed inset-0 z-40" 
+                className="fixed inset-0 z-[9998]" 
                 onClick={() => setShowMenu(false)}
+                aria-hidden
               />
-              <div className="absolute right-0 top-full mt-1 w-28 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-lg shadow-lg z-50 py-0.5">
+              <div 
+                ref={menuContainerRef}
+                className="fixed w-28 dark:bg-sidebar bg-white dark:border-white/10 border-gray-200 border rounded-lg shadow-lg z-[9999] py-0.5 overflow-y-auto custom-scrollbar"
+                style={{
+                  ...(menuPosition.top != null ? { top: menuPosition.top } : { bottom: menuPosition.bottom }),
+                  right: menuPosition.right,
+                  maxHeight: menuPosition.maxHeight,
+                }}
+              >
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -94,6 +145,16 @@ function SortableBoardItem({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
+                    onDuplicate()
+                    setShowMenu(false)
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left text-xs text-text-secondary dark:hover:text-white hover:text-gray-900 dark:hover:bg-white/5 hover:bg-gray-100"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
                     onDelete()
                     setShowMenu(false)
                   }}
@@ -102,7 +163,8 @@ function SortableBoardItem({
                   Delete
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
@@ -113,10 +175,18 @@ function SortableBoardItem({
 export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onToggle: _onToggle }: SidebarProps) {
   const { t } = useTranslation()
   const { signOut } = useAuth()
-  const { boards, createBoard, updateBoard, deleteBoard, reorderBoards } = useBoards()
+  const { boards, createBoard, updateBoard, deleteBoard, reorderBoards, duplicateBoard } = useBoards()
   const [showBoardModal, setShowBoardModal] = useState(false)
   const [editingBoard, setEditingBoard] = useState<Board | null>(null)
   const [deletingBoard, setDeletingBoard] = useState<Board | null>(null)
+
+  const boardMenuCountRef = useRef(0)
+  const [boardMenuOpenCount, setBoardMenuOpenCount] = useState(0)
+  const handleBoardMenuOpenChange = useCallback((open: boolean) => {
+    if (open) boardMenuCountRef.current++
+    else boardMenuCountRef.current = Math.max(0, boardMenuCountRef.current - 1)
+    setBoardMenuOpenCount(boardMenuCountRef.current)
+  }, [])
 
   // Auto-select board: validate saved board exists, or select first board
   useEffect(() => {
@@ -173,11 +243,20 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
     }
   }
 
+  const handleDuplicateBoard = async (board: Board) => {
+    const result = await duplicateBoard(board)
+    if (result.error) {
+      alert(`Lỗi nhân bản board: ${result.error.message}`)
+    } else if (result.data) {
+      onSelectBoard(result.data.id)
+    }
+  }
+
   return (
     <>
-      <aside className={`w-64 flex-shrink-0 sidebar-gradient border-r border-border flex flex-col z-30 shadow-2xl transition-all duration-300 ${
+      <aside className={`w-64 flex-shrink-0 sidebar-gradient border-r border-border flex flex-col shadow-2xl transition-all duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full absolute h-full'
-      }`}>
+      } ${boardMenuOpenCount > 0 ? 'z-[60]' : 'z-30'}`}>
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b dark:border-border/50 border-gray-200">
           <div className="flex items-center gap-2 text-accent dark:hover:text-white hover:text-gray-900 transition-colors duration-300 group cursor-pointer">
@@ -213,6 +292,8 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
                     onSelect={() => onSelectBoard(board.id)}
                     onEdit={() => setEditingBoard(board)}
                     onDelete={() => setDeletingBoard(board)}
+                    onDuplicate={() => handleDuplicateBoard(board)}
+                    onMenuOpenChange={handleBoardMenuOpenChange}
                   />
                 </div>
               ))}
@@ -263,7 +344,7 @@ export default function Sidebar({ selectedBoardId, onSelectBoard, isOpen, onTogg
 
       {/* Delete Confirmation */}
       {deletingBoard && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
           <div 
             className="absolute inset-0 dark:bg-black/60 bg-black/30 backdrop-blur-[4px]"
             onClick={() => setDeletingBoard(null)}

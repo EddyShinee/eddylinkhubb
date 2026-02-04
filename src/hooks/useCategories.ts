@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { directFetch } from '../lib/directFetch'
+import { directFetch, isPgrst204BgOpacity } from '../lib/directFetch'
 import { Category } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -50,22 +50,26 @@ export function useCategories(boardId: string | null) {
 
       console.log('Creating category:', { board_id: boardId, ...data, sort_order: maxOrder })
       
-      const { data: newCategories, error } = await directFetch<Category[]>(
+      const bodyWith = {
+        board_id: boardId,
+        name: data.name,
+        color: data.color,
+        icon: data.icon,
+        bg_opacity: data.bg_opacity ?? 15,
+        sort_order: maxOrder,
+      }
+      let result = await directFetch<Category[]>(
         'categories',
-        {
-          method: 'POST',
-          body: {
-            board_id: boardId,
-            name: data.name,
-            color: data.color,
-            icon: data.icon,
-            bg_opacity: data.bg_opacity ?? 15,
-            sort_order: maxOrder,
-          },
-          accessToken: session.access_token,
-        }
+        { method: 'POST', body: bodyWith, accessToken: session.access_token }
       )
-
+      if (result.error && isPgrst204BgOpacity(result.error)) {
+        const { bg_opacity: _o, ...bodyWithout } = bodyWith
+        result = await directFetch<Category[]>(
+          'categories',
+          { method: 'POST', body: bodyWithout, accessToken: session.access_token }
+        )
+      }
+      const { data: newCategories, error } = result
       if (error) throw error
       
       const newCategory = Array.isArray(newCategories) ? newCategories[0] : newCategories
@@ -84,17 +88,25 @@ export function useCategories(boardId: string | null) {
     if (!session) return { error: new Error('Not authenticated') }
     
     try {
-      const { error } = await directFetch(
+      const bodyWith = { ...updates, updated_at: new Date().toISOString() }
+      let result = await directFetch(
         `categories?id=eq.${id}`,
-        {
-          method: 'PATCH',
-          body: { ...updates, updated_at: new Date().toISOString() },
-          accessToken: session.access_token,
-        }
+        { method: 'PATCH', body: bodyWith, accessToken: session.access_token }
       )
-
+      if (result.error && isPgrst204BgOpacity(result.error)) {
+        const { bg_opacity: _o, ...rest } = updates
+        result = await directFetch(
+          `categories?id=eq.${id}`,
+          { method: 'PATCH', body: { ...rest, updated_at: new Date().toISOString() }, accessToken: session.access_token }
+        )
+      }
+      const { error } = result
       if (error) throw error
-      setCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c))
+      if (updates.board_id !== undefined && updates.board_id !== boardId) {
+        setCategories(categories.filter(c => c.id !== id))
+      } else {
+        setCategories(categories.map(c => c.id === id ? { ...c, ...updates } : c))
+      }
       return { error: null }
     } catch (err) {
       return { error: err as Error }
@@ -143,6 +155,64 @@ export function useCategories(boardId: string | null) {
     }
   }
 
+  const duplicateCategory = async (sourceCategory: Category) => {
+    if (!boardId || !session) return { data: null, error: new Error('Not authenticated') }
+
+    try {
+      const maxOrder = categories.length > 0 ? Math.max(...categories.map(c => c.sort_order)) + 1 : 0
+      const bodyWith = {
+        board_id: boardId,
+        name: `${sourceCategory.name} (copy)`,
+        color: sourceCategory.color,
+        icon: sourceCategory.icon,
+        bg_opacity: sourceCategory.bg_opacity ?? 15,
+        sort_order: maxOrder,
+      }
+      let catResult = await directFetch<Category[]>(
+        'categories',
+        { method: 'POST', body: bodyWith, accessToken: session.access_token }
+      )
+      if (catResult.error && isPgrst204BgOpacity(catResult.error)) {
+        const { bg_opacity: _o, ...bodyWithout } = bodyWith
+        catResult = await directFetch<Category[]>(
+          'categories',
+          { method: 'POST', body: bodyWithout, accessToken: session.access_token }
+        )
+      }
+      if (catResult.error || !catResult.data?.length) throw catResult.error || new Error('Failed to create category')
+      const newCategory = Array.isArray(catResult.data) ? catResult.data[0] : catResult.data
+
+      const { data: sourceBookmarks, error: errBook } = await directFetch<{ url: string; title: string; description: string | null; tags: string[]; sort_order: number }[]>(
+        `bookmarks?category_id=eq.${sourceCategory.id}&order=sort_order.asc`,
+        { accessToken: session.access_token }
+      )
+      if (errBook) throw errBook
+      const list = sourceBookmarks || []
+
+      for (let j = 0; j < list.length; j++) {
+        const b = list[j]
+        await directFetch('bookmarks', {
+          method: 'POST',
+          body: {
+            category_id: newCategory.id,
+            url: b.url,
+            title: b.title,
+            description: b.description,
+            tags: b.tags || [],
+            sort_order: j,
+          },
+          accessToken: session.access_token,
+        })
+      }
+
+      setCategories([...categories, newCategory])
+      return { data: newCategory, error: null }
+    } catch (err) {
+      console.error('Error duplicating category:', err)
+      return { data: null, error: err as Error }
+    }
+  }
+
   return {
     categories,
     loading,
@@ -152,5 +222,6 @@ export function useCategories(boardId: string | null) {
     updateCategory,
     deleteCategory,
     reorderCategories,
+    duplicateCategory,
   }
 }

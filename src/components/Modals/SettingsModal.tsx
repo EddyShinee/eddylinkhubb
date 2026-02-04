@@ -230,7 +230,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
       <div 
         className="absolute inset-0 dark:bg-black/60 bg-black/30 backdrop-blur-[4px]"
         onClick={onClose}

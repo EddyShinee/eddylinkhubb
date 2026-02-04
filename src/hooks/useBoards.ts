@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { directFetch } from '../lib/directFetch'
+import { directFetch, isPgrst204BgOpacity } from '../lib/directFetch'
 import { Board } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -140,6 +140,95 @@ export function useBoards() {
     }
   }
 
+  const duplicateBoard = async (sourceBoard: Board) => {
+    if (!user || !session) return { data: null, error: new Error('Not authenticated') }
+
+    try {
+      const maxOrder = boards.length > 0 ? Math.max(...boards.map(b => b.sort_order)) + 1 : 0
+      const { data: boardResp, error: errBoard } = await directFetch<Board | Board[]>(
+        'boards',
+        {
+          method: 'POST',
+          body: {
+            user_id: user.id,
+            name: `${sourceBoard.name} (copy)`,
+            sort_order: maxOrder,
+          },
+          accessToken: session.access_token,
+        }
+      )
+      if (errBoard) throw errBoard
+      const newBoard = Array.isArray(boardResp) ? boardResp[0] : boardResp
+      if (!newBoard?.id) throw new Error('Tạo board mới thất bại')
+
+      const { data: catResp, error: errCat } = await directFetch<{ id: string; name: string; color: string; icon: string; bg_opacity: number; sort_order: number }[] | { id: string; name: string; color: string; icon: string; bg_opacity: number; sort_order: number }>(
+        `categories?board_id=eq.${sourceBoard.id}&order=sort_order.asc`,
+        { accessToken: session.access_token }
+      )
+      if (errCat) throw errCat
+      const categories = Array.isArray(catResp) ? catResp : catResp ? [catResp] : []
+      const categoryIdMap: Record<string, string> = {}
+
+      for (let i = 0; i < categories.length; i++) {
+        const cat = categories[i]
+        const bodyWith = {
+          board_id: newBoard.id,
+          name: cat.name,
+          color: cat.color,
+          icon: cat.icon,
+          bg_opacity: cat.bg_opacity ?? 15,
+          sort_order: i,
+        }
+        let result = await directFetch<{ id: string } | { id: string }[]>(
+          'categories',
+          { method: 'POST', body: bodyWith, accessToken: session.access_token }
+        )
+        if (result.error && isPgrst204BgOpacity(result.error)) {
+          const { bg_opacity: _, ...bodyWithout } = bodyWith
+          result = await directFetch<{ id: string } | { id: string }[]>(
+            'categories',
+            { method: 'POST', body: bodyWithout, accessToken: session.access_token }
+          )
+        }
+        if (result.error) throw result.error
+        const created = Array.isArray(result.data) ? result.data[0] : result.data
+        if (created?.id) categoryIdMap[cat.id] = created.id
+      }
+
+      for (const oldCatId of Object.keys(categoryIdMap)) {
+        const newCatId = categoryIdMap[oldCatId]
+        const { data: bookmarksResp, error: errBook } = await directFetch<{ url: string; title: string; description: string | null; tags: string[]; sort_order: number }[] | { url: string; title: string; description: string | null; tags: string[]; sort_order: number }>(
+          `bookmarks?category_id=eq.${oldCatId}&order=sort_order.asc`,
+          { accessToken: session.access_token }
+        )
+        if (errBook) throw errBook
+        const list = Array.isArray(bookmarksResp) ? bookmarksResp : bookmarksResp ? [bookmarksResp] : []
+        for (let j = 0; j < list.length; j++) {
+          const b = list[j]
+          const { error: errB } = await directFetch('bookmarks', {
+            method: 'POST',
+            body: {
+              category_id: newCatId,
+              url: b.url,
+              title: b.title,
+              description: b.description ?? null,
+              tags: b.tags ?? [],
+              sort_order: j,
+            },
+            accessToken: session.access_token,
+          })
+          if (errB) throw errB
+        }
+      }
+
+      await fetchBoards()
+      return { data: newBoard, error: null }
+    } catch (err) {
+      console.error('Error duplicating board:', err)
+      return { data: null, error: err as Error }
+    }
+  }
+
   return {
     boards,
     loading,
@@ -149,5 +238,6 @@ export function useBoards() {
     updateBoard,
     deleteBoard,
     reorderBoards,
+    duplicateBoard,
   }
 }

@@ -52,3 +52,9 @@ export async function directFetch<T>(
     return { data: null, error: err as Error }
   }
 }
+
+/** True when API báo PGRST204 vì schema cache chưa có cột bg_opacity */
+export function isPgrst204BgOpacity(err: Error | null): boolean {
+  const msg = err?.message ?? ''
+  return msg.includes('PGRST204') && msg.includes('bg_opacity')
+}
