@@ -28,6 +28,16 @@ export default function Dashboard() {
     return saved !== 'false' // default to true
   })
 
+  // Mobile: luôn 1 cột; desktop: dùng columnCount từ Settings
+  const [effectiveColumnCount, setEffectiveColumnCount] = useState(columnCount)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const update = () => setEffectiveColumnCount(mq.matches ? 1 : columnCount)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [columnCount])
+
   // Save selected board to localStorage when it changes
   useEffect(() => {
     if (selectedBoardId) {
@@ -220,14 +230,6 @@ export default function Dashboard() {
               {t('dashboard.addBookmark')}
             </button>
           </div>
-          <div className="flex items-center gap-1">
-            <button className="p-1.5 text-text-secondary dark:hover:text-white hover:text-gray-900 transition rounded-md dark:hover:bg-white/10 hover:bg-black/5">
-              <span className="material-symbols-outlined text-base">filter_list</span>
-            </button>
-            <button className="p-1.5 text-text-secondary dark:hover:text-white hover:text-gray-900 transition rounded-md dark:hover:bg-white/10 hover:bg-black/5">
-              <span className="material-symbols-outlined text-base">grid_view</span>
-            </button>
-          </div>
         </div>
 
         {/* Categories Grid */}
@@ -239,10 +241,10 @@ export default function Dashboard() {
                   <div 
                     className={categoryHeight === 'equal' ? 'grid gap-4 items-stretch' : 'gap-4 space-y-4'}
                     style={categoryHeight === 'equal' ? { 
-                      gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                      gridTemplateColumns: `repeat(${effectiveColumnCount}, minmax(0, 1fr))`,
                       gridAutoRows: '1fr',
                     } : {
-                      columnCount: columnCount,
+                      columnCount: effectiveColumnCount,
                       columnGap: '1rem',
                     }}
                   >
@@ -286,12 +288,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Help Button */}
-        <div className="fixed bottom-8 right-8 z-50">
-          <button className="bg-accent text-white p-4 rounded-full shadow-[0_0_20px_rgba(129,140,248,0.4)] hover:bg-accent/90 hover:scale-110 transition-all flex items-center justify-center">
-            <span className="material-symbols-outlined text-2xl">help</span>
-          </button>
-        </div>
       </main>
 
       {/* Create Category Modal */}

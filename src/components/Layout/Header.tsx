@@ -114,13 +114,6 @@ export default function Header({ onSelectBoard, sidebarOpen, onToggleSidebar }: 
 
         {/* User Menu */}
         <div className="flex items-center gap-3">
-          <button className="text-text-secondary dark:hover:text-white hover:text-gray-900 transition relative p-1.5 rounded-full dark:hover:bg-white/10 hover:bg-gray-100">
-            <span className="material-symbols-outlined text-xl">notifications</span>
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 bg-accent rounded-full" />
-          </button>
-          
-          <div className="h-5 w-px dark:bg-white/10 bg-gray-200" />
-          
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
