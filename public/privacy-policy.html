@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chính sách quyền riêng tư - LinkHub Bookmark Manager</title>
+  <meta name="description" content="Chính sách quyền riêng tư của LinkHub - Ứng dụng quản lý bookmark">
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --border: #30363d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1rem 4rem;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    .updated {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+    p, li {
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    .lang-toggle {
+      margin-bottom: 1.5rem;
+    }
+    .lang-toggle a {
+      font-size: 0.9rem;
+      margin-right: 1rem;
+    }
+    .lang-toggle a.active { font-weight: 600; }
+    [data-lang]:not(.active) { display: none; }
+    [data-lang].active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="lang-toggle">
+    <a href="#vi" class="active" data-toggle="vi">Tiếng Việt</a>
+    <a href="#en" data-toggle="en">English</a>
+  </div>
+
+  <!-- Vietnamese -->
+  <div data-lang="vi" class="active">
+    <h1>Chính sách quyền riêng tư</h1>
+    <p class="updated">LinkHub Bookmark Manager · Cập nhật: Tháng 2, 2026</p>
+
+    <p>Chính sách quyền riêng tư này mô tả cách LinkHub ("ứng dụng", "chúng tôi") thu thập, sử dụng và bảo vệ thông tin của bạn khi bạn sử dụng ứng dụng quản lý bookmark của chúng tôi, bao gồm phiên bản trên Chrome Web Store.</p>
+
+    <h2>1. Thông tin chúng tôi thu thập</h2>
+    <ul>
+      <li><strong>Thông tin tài khoản:</strong> Địa chỉ email và mật khẩu (đã mã hóa) khi bạn đăng ký hoặc đăng nhập.</li>
+      <li><strong>Dữ liệu bookmark:</strong> Các liên kết, tiêu đề, mô tả, thư mục (board), danh mục (category) và thứ tự sắp xếp do bạn tạo.</li>
+      <li><strong>Dữ liệu cài đặt:</strong> Tùy chọn giao diện (ví dụ: theme, ngôn ngữ) được lưu trên thiết bị hoặc tài khoản của bạn.</li>
+    </ul>
+
+    <h2>2. Mục đích sử dụng</h2>
+    <p>Chúng tôi sử dụng thông tin trên để:</p>
+    <ul>
+      <li>Cung cấp và duy trì dịch vụ quản lý bookmark.</li>
+      <li>Xác thực tài khoản và bảo mật truy cập.</li>
+      <li>Đồng bộ dữ liệu bookmark của bạn giữa các thiết bị khi bạn đăng nhập.</li>
+      <li>Cải thiện trải nghiệm và tính năng của ứng dụng.</li>
+    </ul>
+
+    <h2>3. Lưu trữ và nhà cung cấp bên thứ ba</h2>
+    <p>Chúng tôi sử dụng <strong>Supabase</strong> (supabase.com) để lưu trữ dữ liệu và xác thực người dùng. Dữ liệu của bạn được lưu trên cơ sở hạ tầng đám mây của Supabase. Bạn có thể tìm hiểu thêm về cách Supabase xử lý dữ liệu tại <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Chính sách quyền riêng tư của Supabase</a>.</p>
+
+    <h2>4. Bảo mật</h2>
+    <p>Chúng tôi áp dụng các biện pháp kỹ thuật phù hợp (bao gồm mã hóa kết nối HTTPS và quản lý quyền truy cập) để bảo vệ dữ liệu của bạn. Mật khẩu được lưu trữ dưới dạng băm an toàn bởi Supabase Auth.</p>
+
+    <h2>5. Quyền của bạn</h2>
+    <p>Bạn có quyền:</p>
+    <ul>
+      <li>Truy cập và xem dữ liệu bookmark của mình trong ứng dụng.</li>
+      <li>Xuất dữ liệu (ví dụ: dưới dạng file) thông qua tính năng xuất trong ứng dụng.</li>
+      <li>Xóa tài khoản và dữ liệu liên quan — vui lòng liên hệ chúng tôi qua email bên dưới để yêu cầu xóa tài khoản.</li>
+    </ul>
+
+    <h2>6. Cookie và bộ nhớ cục bộ</h2>
+    <p>Ứng dụng có thể sử dụng bộ nhớ cục bộ (local storage) và cookie để duy trì phiên đăng nhập và tùy chọn giao diện. Chúng không được dùng để theo dõi quảng cáo hay hành vi bên ngoài ứng dụng.</p>
+
+    <h2>7. Trẻ em</h2>
+    <p>Dịch vụ không hướng tới đối tượng dưới 13 tuổi. Chúng tôi không cố ý thu thập thông tin cá nhân từ trẻ em dưới 13 tuổi.</p>
+
+    <h2>8. Thay đổi chính sách</h2>
+    <p>Chúng tôi có thể cập nhật chính sách này theo thời gian. Phiên bản mới sẽ được đăng trên trang này với ngày cập nhật. Việc tiếp tục sử dụng ứng dụng sau khi có thay đổi được coi là chấp nhận chính sách đã cập nhật.</p>
+
+    <h2>9. Liên hệ</h2>
+    <p>Mọi câu hỏi về chính sách quyền riêng tư hoặc dữ liệu cá nhân, vui lòng liên hệ:</p>
+    <p><strong>Email:</strong> <a href="mailto:privacy@example.com">privacy@example.com</a></p>
+    <p><em>(Vui lòng thay địa chỉ email trên bằng email hỗ trợ thực tế của bạn trước khi đăng lên Chrome Web Store.)</em></p>
+  </div>
+
+  <!-- English -->
+  <div data-lang="en">
+    <h1>Privacy Policy</h1>
+    <p class="updated">LinkHub Bookmark Manager · Last updated: February 2026</p>
+
+    <p>This Privacy Policy describes how LinkHub ("the app", "we") collects, uses, and protects your information when you use our bookmark manager application, including the version distributed on the Chrome Web Store.</p>
+
+    <h2>1. Information We Collect</h2>
+    <ul>
+      <li><strong>Account information:</strong> Email address and password (stored in encrypted form) when you register or sign in.</li>
+      <li><strong>Bookmark data:</strong> Links, titles, descriptions, boards, categories, and ordering that you create.</li>
+      <li><strong>Settings data:</strong> UI preferences (e.g. theme, language) stored on your device or account.</li>
+    </ul>
+
+    <h2>2. How We Use It</h2>
+    <p>We use this information to:</p>
+    <ul>
+      <li>Provide and maintain the bookmark management service.</li>
+      <li>Authenticate your account and secure access.</li>
+      <li>Sync your bookmark data across devices when you sign in.</li>
+      <li>Improve the experience and features of the app.</li>
+    </ul>
+
+    <h2>3. Storage and Third-Party Providers</h2>
+    <p>We use <strong>Supabase</strong> (supabase.com) for data storage and user authentication. Your data is stored on Supabase's cloud infrastructure. You can learn more about how Supabase handles data in the <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase Privacy Policy</a>.</p>
+
+    <h2>4. Security</h2>
+    <p>We apply appropriate technical measures (including HTTPS and access controls) to protect your data. Passwords are stored in a secure hashed form by Supabase Auth.</p>
+
+    <h2>5. Your Rights</h2>
+    <p>You have the right to:</p>
+    <ul>
+      <li>Access and view your bookmark data within the app.</li>
+      <li>Export your data (e.g. as a file) via the app's export feature.</li>
+      <li>Delete your account and related data — please contact us at the email below to request account deletion.</li>
+    </ul>
+
+    <h2>6. Cookies and Local Storage</h2>
+    <p>The app may use local storage and cookies to maintain your login session and UI preferences. They are not used for advertising or tracking outside the app.</p>
+
+    <h2>7. Children</h2>
+    <p>The service is not directed at users under 13. We do not knowingly collect personal information from children under 13.</p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>We may update this policy from time to time. The latest version will be posted on this page with an updated date. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>9. Contact</h2>
+    <p>For any questions about this privacy policy or your personal data, please contact:</p>
+    <p><strong>Email:</strong> <a href="mailto:privacy@example.com">privacy@example.com</a></p>
+    <p><em>(Please replace the email above with your actual support email before publishing to the Chrome Web Store.)</em></p>
+  </div>
+
+  <script>
+    (function() {
+      var links = document.querySelectorAll('.lang-toggle [data-toggle]');
+      var blocks = document.querySelectorAll('[data-lang]');
+      function showLang(lang) {
+        blocks.forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+        });
+        links.forEach(function(a) {
+          a.classList.toggle('active', a.getAttribute('data-toggle') === lang);
+        });
+        window.location.hash = lang;
+      }
+      links.forEach(function(a) {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          showLang(a.getAttribute('data-toggle'));
+        });
+      });
+      if (window.location.hash === '#en') showLang('en');
+      else if (window.location.hash === '#vi') showLang('vi');
+    })();
+  </script>
+</body>
+</html>
